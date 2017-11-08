@@ -1,24 +1,15 @@
 import re
 from sets import Set
+from socket import inet_aton, inet_ntoa
 
 class Prefix(object):
-	prefixRe = "([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})/([0-9]{1,2})"
-	prefixFmt = "{}.{}.{}.{}/{}"
+	prefixRe = "([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})/([0-9]{1,2})"
 
 	# Given a prefix in string form, return its value and prefix length
-	# value is read as bitwise little-endian for comparison reasons
 	@staticmethod
 	def parseStr(string):
 		match = re.search(Prefix.prefixRe, string)
-		val = 0
-		for octet in xrange(4):
-			remaining = int(match.group(octet))
-			bit = 0
-			while remaining:
-				if remaining >= 2**(7-bit):
-					val += 2**bit * 2**(8*octet)
-				remaining -= 2**(7-bit)
-				bit += 1
+		value = inet_aton(match.group(1))
 
 		length = int(match.group(4))
 
@@ -67,15 +58,7 @@ class Prefix(object):
 	# considered equal if one contains the other
 	def __cmp__(self, other):
 		minLen = min(self.length, other.length)
-		return (self.value % 2**minLen) - (other.value % 2**minLen)
+		return (self.value >> 2**minLen) - (other.value >> 2**minLen)
 
 	def __str__(self):
-		octets = []
-		for octet in xrange(4):
-			val = 0
-			for bit in xrange(8):
-				if self.value | (2**(8*octet + bit)):
-					val += 2**(7 - bit)
-			octets.append(val)
-
-		return Prefix.prefixFmt.format(*octets, self.length)
+		return inet_ntoa(self.value) + '/' + str(self.length)
