@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
+from PrefixForest import PrefixForest
+import pprint
 
 # A node in the proverbial Tree
 class Node():
@@ -38,7 +40,7 @@ def analyze_conflicts(conflicts):
 	pass
 
 def build_tree():
-	tree = Tree()
+	tree = PrefixForest()
 	while(stream.get_next_record(rec)):
 		# Print the record information only if it is not a valid record
 		if rec.status != "valid":
@@ -49,37 +51,39 @@ def build_tree():
 			if elem.type != 'A':
 				elem = rec.get_next_elem()
 				continue
+			print("tree insert")
+			tree.insert(elem)
+			for x in tree.roots:
+				pprint.pprint(str(x))
+			# fields = elem.fields
+			# if not fields:
+			# 	elem = rec.get_next_elem()
+			# 	continue
 
-			fields = elem.fields
-			if not fields:
-				elem = rec.get_next_elem()
-				continue
+			# prefix = fields.get('prefix', None)
+			# if not prefix:
+			# 	elem = rec.get_next_elem()
+			# 	continue
 
-			prefix = fields.get('prefix', None)
-			if not prefix:
-				elem = rec.get_next_elem()
-				continue
+			# aspath = fields.get('as-path', None)
+			# if not aspath:
+			# 	elem = rec.get_next_elem()
+			# 	continue
 
-			aspath = fields.get('as-path', None)
-			if not aspath:
-				elem = rec.get_next_elem()
-				continue
+			# # convert to list
+			# aspath = aspath.split()
+			# # originator of the announcement
+			# origin = aspath[-1]
+			# # Clean up AS path prepending and get a list of unique values
+			# aspath_uniq = []
+			# [aspath_uniq.append(x) for x in aspath if x not in aspath_uniq]
 
-			# convert to list
-			aspath = aspath.split()
-			# originator of the announcement
-			origin = aspath[-1]
-			# Clean up AS path prepending and get a list of unique values
-			aspath_uniq = []
-			[aspath_uniq.append(x) for x in aspath if x not in aspath_uniq]
-
-			# Make a node and add to the tree
-			node = Node(prefix, origin, aspath)
-			# assumed to return a bool
-			conflicts = tree.insert(node)
-			if conflicts:
-				analyze_conflicts(conflicts)
-
+			# # Make a node and add to the tree
+			# node = Node(prefix, origin, aspath)
+			# # assumed to return a bool
+			# conflicts = tree.insert(node)
+			# if conflicts:
+			# 	analyze_conflicts(conflicts)
 			elem = rec.get_next_elem()
 	return tree
 

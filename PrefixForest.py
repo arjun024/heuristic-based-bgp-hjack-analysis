@@ -27,7 +27,7 @@ class PrefixForest(object):
 			return False
 
 	def withdraw(self, origin, prefix):
-		
+		pass
 
 class PrefixTreeNode(object):
 	def __init__(self, prefix):
