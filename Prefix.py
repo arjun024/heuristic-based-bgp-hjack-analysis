@@ -1,6 +1,7 @@
 import re
 from sets import Set
 from socket import inet_aton, inet_ntoa
+from struct import pack, unpack
 
 class Prefix(object):
 	prefixRe = "([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})/([0-9]{1,2})"
@@ -9,9 +10,9 @@ class Prefix(object):
 	@staticmethod
 	def parseStr(string):
 		match = re.search(Prefix.prefixRe, string)
-		value = inet_aton(match.group(1))
+		value = unpack("!I", inet_aton(match.group(1)))
 
-		length = int(match.group(4))
+		length = int(match.group(2))
 
 		return value, length
 
@@ -61,4 +62,4 @@ class Prefix(object):
 		return (self.value >> 2**minLen) - (other.value >> 2**minLen)
 
 	def __str__(self):
-		return inet_ntoa(self.value) + '/' + str(self.length)
+		return inet_ntoa(pack("!I",self.value)) + '/' + str(self.length)

@@ -12,6 +12,9 @@ class PrefixForest(object):
 		prefix = Prefix(element.fields['prefix'], element.fields['as-path'].split(" "))
 		newNode = PrefixTreeNode(prefix)
 		index = bisect_left(self.roots, newNode)
+		if index == len(self.roots):
+			self.roots.append(newNode)
+			return False
 		if newNode == self.roots[index]:
 			if newNode.prefix.length >= self.roots[index].prefix.length:
 				return self.roots[index].insert(newNode)
@@ -23,7 +26,8 @@ class PrefixForest(object):
 			insort(self.roots, prefix)
 			return False
 
-	#####TODO: remove method
+	def withdraw(self, origin, prefix):
+		
 
 class PrefixTreeNode(object):
 	def __init__(self, prefix):
@@ -40,7 +44,7 @@ class PrefixTreeNode(object):
 
 		# This function should only be called on nodes
 		# with competing prefixes
-		assert(self.prefix.value == other.prefix.value | (2**(self.prefix.length) - 1))
+		assert(self.prefix == other.prefix)
 
 		if self.prefix.length == other.prefix.length:
 			# If the prefixes are exactly the same, merge them
@@ -69,6 +73,8 @@ class PrefixTreeNode(object):
 				self.left = other
 				return True
 
+	def __str__(self):
+		return str(self.prefix)
 
 	def __cmp__(self, other):
 		return self.prefix.__cmp__(other.prefix)
