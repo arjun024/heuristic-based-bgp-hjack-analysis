@@ -51,10 +51,7 @@ def build_tree():
 			if elem.type != 'A':
 				elem = rec.get_next_elem()
 				continue
-			print("tree insert")
 			tree.insert(elem)
-			for x in tree.roots:
-				pprint.pprint(str(x))
 			# fields = elem.fields
 			# if not fields:
 			# 	elem = rec.get_next_elem()
@@ -89,6 +86,7 @@ def build_tree():
 
 def main():
 	tree = build_tree()
+	print str(tree)
 
 
 if __name__ == '__main__':

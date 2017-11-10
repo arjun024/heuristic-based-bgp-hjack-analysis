@@ -1,5 +1,6 @@
-from bisect import bisect_left, insort
+import bisect
 from Prefix import Prefix
+from pprint import pformat
 
 class PrefixForest(object):
 	def __init__(self):
@@ -8,76 +9,82 @@ class PrefixForest(object):
 
 	# Returns True if a new conflict is introduced
 	def insert(self, element):
+		try:
+			Prefix.parseStr(element.fields['prefix'])
+		except ValueError:
+			return False
 		self.size += 1
 		prefix = Prefix(element.fields['prefix'], element.fields['as-path'].split(" "))
-		newNode = PrefixTreeNode(prefix)
-		index = bisect_left(self.roots, newNode)
+		index = bisect.bisect_left(self.roots, prefix)
 		if index == len(self.roots):
-			self.roots.append(newNode)
+			self.roots.append(PrefixNode(prefix))
 			return False
-		if newNode == self.roots[index]:
-			if newNode.prefix.length >= self.roots[index].prefix.length:
-				return self.roots[index].insert(newNode)
+		if prefix == self.roots[index]:
+			if prefix.length() >= self.roots[index].root.length():
+				return self.roots[index].insert(prefix)
 			else:
-				ret = newNode.insert(self.roots[index])
-				self.roots[index] = newNode
-				return ret
+				flattened = []
+				while index < len(self.roots) and self.roots[index] == prefix:
+					flattened.append(self.roots[index].root)
+					flattened.extend(self.roots[index].children)
+					del self.roots[index]
+				self.roots.insert(index, PrefixNode(prefix, flattened))
+				return True
 		else:
-			insort(self.roots, prefix)
+			self.roots.insert(index, PrefixNode(prefix))
 			return False
 
+	# withdraw an announcement of 'prefix' from 'origin'
+	# returns the new number of origins announcing the prefix
 	def withdraw(self, origin, prefix):
-		pass
-
-class PrefixTreeNode(object):
-	def __init__(self, prefix):
-		self.prefix = prefix
-		self.left = None
-		self.right = None
-
-	# Insert a new prefix somewhere into the tree
-	# Returns True if a new conflict is introduced
-	def insert(self, other):
-		# This function should only be called on nodes with prefixes
-		# at least as long as this one's
-		assert(self.prefix.length <= other.prefix.length)
-
-		# This function should only be called on nodes
-		# with competing prefixes
-		assert(self.prefix == other.prefix)
-
-		if self.prefix.length == other.prefix.length:
-			# If the prefixes are exactly the same, merge them
-			return self.prefix.merge(other.prefix)
-		elif other.prefix.value | 2**self.prefix.length:
-			# Otherwise insert the new node into the tree
-			# on the right if the next bit is 1
-			if self.right:
-				if self.right.prefix.length > other.prefix.length:
-					other.insert(self.right)
-					self.right = other
-					return True
-				return self.right.insert(other)
-			else:
-				self.right = other
-				return True
-		else:
-			#on the left if the next bit is 0
-			if self.left:
-				if self.left.prefix.length > other.prefix.length:
-					other.insert(self.left)
-					self.left = other
-					return True
-				return self.left.insert(other)
-			else:
-				self.left = other
-				return True
+		try:
+			index = bisect.index(self.roots, prefix)
+		except ValueError:
+			return 0
+		return self.roots[index].root.withdraw(origin)
 
 	def __str__(self):
-		return str(self.prefix)
+		out = []
+		for prefix in self.roots:
+			out.append(prefix.pr())
+		return pformat(out)
+
+class PrefixNode(object):
+	def __init__(self, prefix, children=[]):
+		self.root = prefix
+		self.children = children
+
+	# Inserts a new prefix
+	# Assumes self.children is very short, so brute force is best
+	def insert(self, other):
+		for child in self.children:
+			if child.length() == other.length() and child == other:
+				child.merge(other)
+				return
+		self.children.append(other)
+
+	# helper for constructing dict for __str__
+	def pr(self):
+		childStrs = []
+		for child in self.children:
+			assert(type(child) != type(self))
+			childStrs.append(str(child))
+		return {str(self.root) : childStrs}
+
+	def value(self):
+		return self.root.value()
+
+	def length(self):
+		return self.root.length()
+
+	def __str__(self):
+		return pformat(self.pr())
 
 	def __cmp__(self, other):
-		return self.prefix.__cmp__(other.prefix)
+		try:
+			return self.root.__cmp__(other.root)
+		except AttributeError:
+			return self.root.__cmp__(other)
 
 	def __len__(self):
-		return len(self.prefix)
+		return len(self.root)
