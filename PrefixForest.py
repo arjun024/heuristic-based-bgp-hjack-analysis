@@ -52,7 +52,7 @@ class PrefixForest(object):
 class PrefixNode(object):
 	def __init__(self, prefix, children=[]):
 		self.root = prefix
-		self.children = children
+		self.children = children[:]
 
 	# Inserts a new prefix
 	# Assumes self.children is very short, so brute force is best
