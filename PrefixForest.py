@@ -14,7 +14,7 @@ class PrefixForest(object):
 		except ValueError:
 			return False
 		self.size += 1
-		prefix = Prefix(element.fields['prefix'], element.fields['as-path'].split(" "))
+		prefix = Prefix(element.fields['prefix'], element.fields['as-path'])
 		index = bisect.bisect_left(self.roots, prefix)
 		if index == len(self.roots):
 			self.roots.append(PrefixNode(prefix))

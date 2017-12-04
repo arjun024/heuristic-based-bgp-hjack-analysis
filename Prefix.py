@@ -25,18 +25,19 @@ class Prefix(object):
 		self.lengthVal = lengthVal
 		self.announcements = []
 		if asPath:
-			self.addAnnouncement(asPath)
+			path = []
+			for step in asPath.split(" "):
+				match = re.search('[0-9]+', step)
+				path.append(int(match.group(0)))
+			self.addAnnouncement(path)
 
 	# Record an announcement of this prefix
 	# Returns True if a new conflict is introduced
 	def addAnnouncement(self, asPath):
-		# return False by default
+		# return False by default=
 		ret = False
 
-		# it is helpful to traverse the path backwards
-		asPath = list(reversed(asPath))
-
-		origin = ASTreeNode(asPath[0])
+		origin = ASTreeNode(asPath[-1])
 		for root in self.announcements:
 			if origin == root:
 				current = root
@@ -48,15 +49,11 @@ class Prefix(object):
 			self.announcements.append(origin)
 			current = origin
 
-		if len(asPath) > 2 and asPath[2] == origin:
-			# if the first and third ASes on the path are the same,
-			# route posioning may be being used in this announcement,
-			# so ignore the second and third ASes
-			index = 3
-		else:
-			index = 1
+		# if the first AS on the path is repeated, traffic engineering is being used,
+		# so start the path at the last occurance of the origin
+		index = asPath.index(asPath[-1])
 
-		while index < len(asPath):
+		while index >= 0:
 			step = ASTreeNode(asPath[index])
 			for child in current.children:
 				if step == child:
@@ -64,7 +61,7 @@ class Prefix(object):
 					break
 			else:
 				current.children.append(step)
-			index += 1
+			index -= 1
 
 		return ret
 

@@ -94,9 +94,9 @@ def detect_hijack(sample_as, as_list):
 	# If majority of elements in the list have the same value and
 	# the sample element has a different value, it could be a hijack
 	counter = Counter(as_list)
-	#if counter.most_common()[0][1] <= len(as_list) / 2:
+	if counter.most_common()[0][1] <= len(as_list) / 2:
 		# No majority element
-		#return False
+		return False
 	if counter.most_common()[0][0] == sample_as:
 		# Most common is the sample: not the hijacker
 		return False
@@ -118,13 +118,15 @@ def analyze(forest):
 		for astree in high_level_node.root.announcements:
 			if detect_hijack(int(astree.AS), as_origins):
 				astree.is_a_hijack = True
-				import pdb; pdb.set_trace()
+				print 'Hijacker: ' + astree.AS
+				print 'All origins: ' + str(as_origins)
 
 		for child in high_level_node.children:
 			for astree in child.announcements:
 				if detect_hijack(int(astree.AS), as_origins):
 					astree.is_a_hijack = True
-					import pdb; pdb.set_trace()
+					print 'Hijacker: ' + astree.AS
+					print 'All origins: ' + str(as_origins)
 
 
 def main():
