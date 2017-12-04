@@ -139,6 +139,9 @@ class ASTreeNode(object):
 	def __init__(self, AS):
 		self.AS = AS
 		self.children = []
+		# This field is manipulated by the analyzer if it believes this corresponds to a hijack
+		# Initially set to False
+		self.is_a_hijack = False
 
 	def __cmp__(self, other):
 		try:

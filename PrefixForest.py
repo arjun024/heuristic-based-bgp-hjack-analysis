@@ -69,6 +69,7 @@ class PrefixNode(object):
 		for child in self.children:
 			assert(type(child) != type(self))
 			childStrs.append(str(child))
+		# return {str(self.root) : childStrs, 'announcement_root': str(self.root.announcements[0].AS)}
 		return {str(self.root) : childStrs}
 
 	def value(self):

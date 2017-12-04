@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from collections import Counter
 
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
 from PrefixForest import PrefixForest
@@ -31,7 +32,8 @@ rec = BGPRecord()
 stream.add_filter('collector','rrc11')
 
 # Time interval:
-stream.add_interval_filter(1503631454, 1503631454)# 1503632022) #1503631546 1503631561
+#stream.add_interval_filter(1503631454, 1503631454)
+stream.add_interval_filter(1503631454, 1503631954)
 # Start the stream
 stream.start()
 
@@ -84,9 +86,51 @@ def build_tree():
 			elem = rec.get_next_elem()
 	return tree
 
+# Given an origin AS and list of all origin ASes, detect if it's a hijacker or not
+def detect_hijack(sample_as, as_list):
+	# with little info, we can't detect a hijack
+	if len(as_list) < 3:
+		return False
+	# If majority of elements in the list have the same value and
+	# the sample element has a different value, it could be a hijack
+	counter = Counter(as_list)
+	#if counter.most_common()[0][1] <= len(as_list) / 2:
+		# No majority element
+		#return False
+	if counter.most_common()[0][0] == sample_as:
+		# Most common is the sample: not the hijacker
+		return False
+	return True
+
+
+def analyze(forest):
+	for high_level_node in forest.roots:
+		as_origins = []
+
+		# collect all as origin values
+		for astree in high_level_node.root.announcements:
+			as_origins.append(int(astree.AS))
+		for child in high_level_node.children:
+			for astree in child.announcements:
+				as_origins.append(int(astree.AS))
+
+		# mark
+		for astree in high_level_node.root.announcements:
+			if detect_hijack(int(astree.AS), as_origins):
+				astree.is_a_hijack = True
+				import pdb; pdb.set_trace()
+
+		for child in high_level_node.children:
+			for astree in child.announcements:
+				if detect_hijack(int(astree.AS), as_origins):
+					astree.is_a_hijack = True
+					import pdb; pdb.set_trace()
+
+
 def main():
 	tree = build_tree()
-	print str(tree)
+	#print str(tree)
+	analyze(tree)
 
 
 if __name__ == '__main__':
