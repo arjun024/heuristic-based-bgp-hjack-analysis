@@ -118,14 +118,14 @@ def analyze(forest):
 		for astree in high_level_node.root.announcements:
 			if detect_hijack(int(astree.AS), as_origins):
 				astree.is_a_hijack = True
-				print 'Hijacker: ' + astree.AS
+				print 'Hijacker: %d' % astree.AS
 				print 'All origins: ' + str(as_origins)
 
 		for child in high_level_node.children:
 			for astree in child.announcements:
 				if detect_hijack(int(astree.AS), as_origins):
 					astree.is_a_hijack = True
-					print 'Hijacker: ' + astree.AS
+					print 'Hijacker: %d' % astree.AS
 					print 'All origins: ' + str(as_origins)
 
 
