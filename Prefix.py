@@ -34,7 +34,7 @@ class Prefix(object):
 	# Record an announcement of this prefix
 	# Returns True if a new conflict is introduced
 	def addAnnouncement(self, asPath):
-		# return False by default=
+		# return False by default
 		ret = False
 
 		origin = ASTreeNode(asPath[-1])
@@ -51,7 +51,7 @@ class Prefix(object):
 
 		# if the first AS on the path is repeated, traffic engineering is being used,
 		# so start the path at the last occurance of the origin
-		index = asPath.index(asPath[-1])
+		index = asPath.index(asPath[-1]) - 1
 
 		while index >= 0:
 			step = ASTreeNode(asPath[index])
@@ -60,8 +60,8 @@ class Prefix(object):
 					current = child
 					break
 			else:
-				current.children.append(step)
-			index -= 1
+				current.adopt(step)
+			index = asPath.index(asPath[index]) - 1
 
 		return ret
 
@@ -94,9 +94,9 @@ class Prefix(object):
 					Prefix.mergeNodes(destChild, newChild)
 					break
 			else:
-				destNode.children.append(newChild)
+				destNode.adopt(newChild)
 
-	# withdraw an annouoncement of this prefix from 'origin'
+	# withdraw an announcement of this prefix from 'origin'
 	# returns the new number of announcing ASes
 	def withdraw(self, origin):
 		for root in self.announcements:
@@ -139,6 +139,12 @@ class ASTreeNode(object):
 		# This field is manipulated by the analyzer if it believes this corresponds to a hijack
 		# Initially set to False
 		self.is_a_hijack = False
+
+	def adopt(self, other):
+		for child in self.children:
+			assert child != other, str(child) + ' == ' + str(other)
+		assert self.AS != other, str(self) + ' == ' + str(other)
+		self.children.append(other)
 
 	def __cmp__(self, other):
 		try:
