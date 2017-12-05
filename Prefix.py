@@ -25,11 +25,7 @@ class Prefix(object):
 		self.lengthVal = lengthVal
 		self.announcements = []
 		if asPath:
-			path = []
-			for step in asPath.split(" "):
-				match = re.search('[0-9]+', step)
-				path.append(int(match.group(0)))
-			self.addAnnouncement(path)
+			self.addAnnouncement(asPath)
 
 	# Record an announcement of this prefix
 	# Returns True if a new conflict is introduced

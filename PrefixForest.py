@@ -1,20 +1,31 @@
-import bisect
+import bisect, re
 from Prefix import Prefix
 from pprint import pformat
 
 class PrefixForest(object):
 	def __init__(self):
+		# array of PrefixNodes
 		self.roots = []
 		self.size = 0
 
-	# Returns True if a new conflict is introduced
-	def insert(self, element):
+	# wraps insert for inserting unsanitized BGPStream data
+	def unsanitizedInsert(self, element):
 		try:
 			Prefix.parseStr(element.fields['prefix'])
 		except ValueError:
 			return False
+		asPath = element.fields['as-path']
+		path = []
+		if asPath:
+			for step in asPath.split(" "):
+				match = re.search('[0-9]+', step)
+				path.append(int(match.group(0)))
+		prefix = Prefix(element.fields['prefix'], path)
+		return self.insert(prefix)
+
+	# Returns True if a new conflict is introduced
+	def insert(self, prefix):
 		self.size += 1
-		prefix = Prefix(element.fields['prefix'], element.fields['as-path'])
 		index = bisect.bisect_left(self.roots, prefix)
 		if index == len(self.roots):
 			self.roots.append(PrefixNode(prefix))
@@ -37,11 +48,16 @@ class PrefixForest(object):
 	# withdraw an announcement of 'prefix' from 'origin'
 	# returns the new number of origins announcing the prefix
 	def withdraw(self, origin, prefix):
+		prefix = Prefix(prefix)
 		try:
 			index = bisect.index(self.roots, prefix)
 		except ValueError:
 			return 0
-		return self.roots[index].root.withdraw(origin)
+		toDel = self.roots[index].root.withdraw(origin)
+		if toDel:
+			del self.roots[index]
+			for node in toDel:
+				self.insert(node)
 
 	def __str__(self):
 		out = []
@@ -51,6 +67,7 @@ class PrefixForest(object):
 
 class PrefixNode(object):
 	def __init__(self, prefix, children=[]):
+		# root and children are Prefix objects
 		self.root = prefix
 		self.children = children[:]
 
@@ -62,6 +79,19 @@ class PrefixNode(object):
 				child.merge(other)
 				return
 		self.children.append(other)
+
+	def withdraw(self, origin, prefix):
+		if self.root == prefix:
+			self.root.withdraw(origin)
+			return self.children
+		toDel = -1
+		for i in xrange(len(self.children)):
+			if self.children[i] == prefix and self.children[i].length() == prefix.length():
+				if not self.children[i].withdraw(origin):
+					# if no ASes are announcing a prefix, remove that prefix
+					toDel = i
+		del self.children[toDel]
+		return []
 
 	# helper for constructing dict for __str__
 	def pr(self):
