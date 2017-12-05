@@ -33,10 +33,12 @@ stream.add_filter('collector','rrc11')
 
 # Time interval:
 #stream.add_interval_filter(1503631454, 1503631454)
-stream.add_interval_filter(1503631454, 1503631954)
-print("sampling interval: 7 days")
+stream.add_interval_filter(1503631454, 1503635054)
+print("sampling interval: 1 hour")
 # Start the stream
 stream.start()
+
+as_reliability_map = {}
 
 def analyze_conflicts(conflicts):
 	# arg0: List[Node]
@@ -103,8 +105,36 @@ def detect_hijack(sample_as, as_list):
 		return False
 	return True
 
+def mark(astree, key='appeared'):
+	if not astree:
+		return
+	if as_reliability_map.get(astree.AS, None) is None:
+		as_reliability_map[astree.AS] = {
+			'gullible': 0,
+			'appeared': 0,
+			'reliability_score': 0
+		}
+	if key == 'gullible':
+		as_reliability_map[astree.AS]['gullible'] += 1
+	else:
+		as_reliability_map[astree.AS]['appeared'] += 1
+	# recalc the score
+	appearances = as_reliability_map[astree.AS]['appeared']
+	gullible_apprearances = as_reliability_map[astree.AS]['gullible']
+	as_reliability_map[astree.AS]['reliability_score'] = (appearances - gullible_apprearances) / float(appearances)
+	for child in astree.children:
+		mark(child, key)
+
 
 def analyze(forest):
+	"""
+	as_map = {
+		902: {
+			'I_trusted_the_hijacker': x,
+			'I_appeared_in_an_overlap': y
+		}
+	}
+	"""
 	counter = {
 		'all_announcements' : 0,
 		'all_conflicts': 0,
@@ -127,21 +157,25 @@ def analyze(forest):
 		for astree in high_level_node.root.announcements:
 			counter['all_announcements'] += 1
 			all_origin_ases.add(int(astree.AS))
+			for child in astree.children:
+				mark(child, 'appeared')
 			if detect_hijack(int(astree.AS), as_origins):
 				astree.is_a_hijack = True
 				hijacker_ases.add(int(astree.AS))
-				#print 'Hijacker: %d' % astree.AS
-				#print 'All origins: ' + str(as_origins)
+				for child in astree.children:
+					mark(child, 'gullible')
 
 		for child in high_level_node.children:
 			for astree in child.announcements:
 				counter['all_announcements'] += 1
 				all_origin_ases.add(int(astree.AS))
+				for child in astree.children:
+					mark(child, 'appeared')
 				if detect_hijack(int(astree.AS), as_origins):
 					astree.is_a_hijack = True
 					hijacker_ases.add(int(astree.AS))
-					#print 'Hijacker: %d' % astree.AS
-					#print 'All origins: ' + str(as_origins)
+					for child in astree.children:
+						mark(child, 'gullible')
 	counter['hijacks'] = len(hijacker_ases)
 	counter['all_conflicts'] = len(all_origin_ases)
 
@@ -149,6 +183,8 @@ def analyze(forest):
 	print(counter)
 	print('Hijacks per announcement: %f %%' % (counter['hijacks'] * 100 / float(counter['all_announcements'])))
 	print('Hijacks per overlaps: %f %%' % (counter['hijacks'] * 100 / float(counter['all_conflicts'])))
+	print('**********')
+	print(sorted(as_reliability_map.items(), key=lambda (k, v): v['reliability_score']))
 
 
 def main():
