@@ -46,18 +46,25 @@ class PrefixForest(object):
 			return False
 
 	# withdraw an announcement of 'prefix' from 'origin'
-	# returns the new number of origins announcing the prefix
+	# returns True if the number of origins announcing a prefix changes
 	def withdraw(self, origin, prefix):
+		try:
+			Prefix.parseStr(prefix)
+		except ValueError:
+			return False
 		prefix = Prefix(prefix)
 		try:
-			index = bisect.index(self.roots, prefix)
+			index = bisect.bisect_left(self.roots, prefix)
 		except ValueError:
-			return 0
-		toDel = self.roots[index].root.withdraw(origin)
-		if toDel:
+			return False
+		if index >= len(self.roots) or self.roots[index] != prefix:
+			return False
+		toInsert = self.roots[index].withdraw(origin, prefix)
+		if toInsert:
 			del self.roots[index]
-			for node in toDel:
+			for node in toInsert:
 				self.insert(node)
+		return True
 
 	def __str__(self):
 		out = []
@@ -90,7 +97,8 @@ class PrefixNode(object):
 				if not self.children[i].withdraw(origin):
 					# if no ASes are announcing a prefix, remove that prefix
 					toDel = i
-		del self.children[toDel]
+		if toDel >= 0:
+			del self.children[toDel]
 		return []
 
 	# helper for constructing dict for __str__
