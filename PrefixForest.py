@@ -23,6 +23,26 @@ class PrefixForest(object):
 		prefix = Prefix(element.fields['prefix'], path)
 		return self.insert(prefix)
 
+	# returns all announcements of a prefix as a list of
+	# trees of ASTreeNode objects
+	# takes a prefix as a string
+	def announcements(self, prefix):
+		try:
+			Prefix.parseStr(element.fields['prefix'])
+		except ValueError:
+			return []
+		prefix = Prefix(prefix)
+		try:
+			index = bisect.bisect_left(self.roots, prefix)
+		except ValueError:
+			return []
+		if index >= len(self.roots) or self.roots[index] != prefix:
+			return []
+		for p in [self.roots[index].root] + self.roots[index].children:
+			if prefix.length() == p.length():
+				return p.announcements
+		return []
+
 	# Returns True if a new conflict is introduced
 	def insert(self, prefix):
 		self.size += 1
