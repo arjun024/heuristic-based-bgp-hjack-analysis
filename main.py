@@ -33,7 +33,8 @@ stream.add_filter('collector','rrc11')
 
 # Time interval:
 #stream.add_interval_filter(1503631454, 1503631454)
-stream.add_interval_filter(1503631454, 1503631954)
+stream.add_interval_filter(1503631454, 1503631454)
+print("sampling interval: 7 days")
 # Start the stream
 stream.start()
 
@@ -104,6 +105,14 @@ def detect_hijack(sample_as, as_list):
 
 
 def analyze(forest):
+	counter = {
+		'all_announcements' : 0,
+		'all_conflicts': 0,
+		'hijacks': 0
+	}
+	all_origin_ases = set()
+	hijacker_ases = set()
+
 	for high_level_node in forest.roots:
 		as_origins = []
 
@@ -116,17 +125,30 @@ def analyze(forest):
 
 		# mark
 		for astree in high_level_node.root.announcements:
+			counter['all_announcements'] += 1
+			all_origin_ases.add(int(astree.AS))
 			if detect_hijack(int(astree.AS), as_origins):
 				astree.is_a_hijack = True
-				print 'Hijacker: %d' % astree.AS
-				print 'All origins: ' + str(as_origins)
+				hijacker_ases.add(int(astree.AS))
+				#print 'Hijacker: %d' % astree.AS
+				#print 'All origins: ' + str(as_origins)
 
 		for child in high_level_node.children:
 			for astree in child.announcements:
+				counter['all_announcements'] += 1
+				all_origin_ases.add(int(astree.AS))
 				if detect_hijack(int(astree.AS), as_origins):
 					astree.is_a_hijack = True
-					print 'Hijacker: %d' % astree.AS
-					print 'All origins: ' + str(as_origins)
+					hijacker_ases.add(int(astree.AS))
+					#print 'Hijacker: %d' % astree.AS
+					#print 'All origins: ' + str(as_origins)
+	counter['hijacks'] = len(hijacker_ases)
+	counter['all_conflicts'] = len(all_origin_ases)
+
+	print('**********')
+	print(counter)
+	print('Hijacks per announcement: %f %%' % (counter['hijacks'] * 100 / float(counter['all_announcements'])))
+	print('Hijacks per overlaps: %f %%' % (counter['hijacks'] * 100 / float(counter['all_conflicts'])))
 
 
 def main():
