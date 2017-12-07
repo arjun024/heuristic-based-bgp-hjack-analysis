@@ -3,7 +3,11 @@ from collections import Counter
 
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
 from PrefixForest import PrefixForest
-import pprint
+import pprint, argparse
+
+parser = argparse.ArgumentParser(description='Download a file over HTTP.')
+parser.add_argument('file', metavar='F', default='&%*None', help='File to write output to.')
+file = parser.parse_args().file
 
 # A node in the proverbial Tree
 class Node():
@@ -33,7 +37,8 @@ stream.add_filter('collector','rrc11')
 
 # Time interval:
 #stream.add_interval_filter(1503631454, 1503631454)
-stream.add_interval_filter(1503631454, 1503635054)
+#stream.add_interval_filter(1503631454, 1503635054)
+stream.add_interval_filter(1503631454, 1506252254)
 print("sampling interval: 1 hour")
 # Start the stream
 stream.start()
@@ -46,7 +51,15 @@ def analyze_conflicts(conflicts):
 
 def build_tree():
 	tree = PrefixForest()
+	init = True
 	while(stream.get_next_record(rec)):
+		if init:
+			init = False
+			start_time = rec.time
+			day = 0
+		elif rec.time - day*24*60*60 > start_time:
+			print 'Day ' + str(day)
+			day += 1
 		# Print the record information only if it is not a valid record
 		if rec.status != "valid":
 			continue
@@ -179,13 +192,18 @@ def analyze(forest):
 	counter['hijacks'] = len(hijacker_ases)
 	counter['all_conflicts'] = len(all_origin_ases)
 
-	print('**********')
-	print(counter)
-	print('Hijacks per announcement: %f %%' % (counter['hijacks'] * 100 / float(counter['all_announcements'])))
-	print('Hijacks per overlaps: %f %%' % (counter['hijacks'] * 100 / float(counter['all_conflicts'])))
-	print('**********')
-	print(sorted(as_reliability_map.items(), key=lambda (k, v): v['reliability_score']))
+	output = '**********\n'
+	output += str(counter) + '\n'
+	output += 'Hijacks per announcement: %f %%\n' % (counter['hijacks'] * 100 / float(counter['all_announcements']))
+	output += 'Hijacks per overlaps: %f %%\n' % (counter['hijacks'] * 100 / float(counter['all_conflicts']))
+	output += '**********\n'
+	output += str(sorted(as_reliability_map.items(), key=lambda (k, v): v['reliability_score']))
 
+	if file == '&%*None':
+		print output
+	else:
+		with open(file, 'w') as f:
+			f.write(output)
 
 def main():
 	tree = build_tree()
