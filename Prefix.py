@@ -19,21 +19,21 @@ class Prefix(object):
 
 		return val, lengthVal
 
-	def __init__(self, prefix, asPath=None):
+	def __init__(self, prefix, asPath=None, time=None):
 		val, lengthVal = Prefix.parseStr(prefix)
 		self.val = val
 		self.lengthVal = lengthVal
 		self.announcements = []
-		if asPath:
-			self.addAnnouncement(asPath)
+		if asPath and time:
+			self.addAnnouncement(asPath, time)
 
 	# Record an announcement of this prefix
 	# Returns True if a new conflict is introduced
-	def addAnnouncement(self, asPath):
+	def addAnnouncement(self, asPath, time):
 		# return False by default
 		ret = False
 
-		origin = ASTreeNode(asPath[-1])
+		origin = ASTreeNode(asPath[-1], time)
 		for root in self.announcements:
 			if origin == root:
 				current = root
@@ -129,8 +129,11 @@ class Prefix(object):
 		return inet_ntoa(pack("!I", self.value())) + '/' + str(self.length())
 
 class ASTreeNode(object):
-	def __init__(self, AS):
+	def __init__(self, AS, time=-1):
 		self.AS = AS
+                # time is the time of the announcement, in seconds since epoch
+                # only used at the root: set to -1 for non-root nodes
+                self.time = time
 		self.children = []
 		# This field is manipulated by the analyzer if it believes this corresponds to a hijack
 		# Initially set to False

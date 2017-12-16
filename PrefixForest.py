@@ -20,7 +20,7 @@ class PrefixForest(object):
 			for step in asPath.split(" "):
 				match = re.search('[0-9]+', step)
 				path.append(int(match.group(0)))
-		prefix = Prefix(element.fields['prefix'], path)
+		prefix = Prefix(element.fields['prefix'], path, element.time)
 		return self.insert(prefix)
 
 	# returns all announcements of a prefix as a list of
@@ -43,7 +43,7 @@ class PrefixForest(object):
 				return p.announcements
 		return []
 
-	# Returns True if a new conflict is introduced
+	# Returns the prefix with a conflict if a new conflict is introduced
 	def insert(self, prefix):
 		self.size += 1
 		index = bisect.bisect_left(self.roots, prefix)
@@ -60,7 +60,7 @@ class PrefixForest(object):
 					flattened.extend(self.roots[index].children)
 					del self.roots[index]
 				self.roots.insert(index, PrefixNode(prefix, flattened))
-				return True
+				return self.roots[index]
 		else:
 			self.roots.insert(index, PrefixNode(prefix))
 			return False

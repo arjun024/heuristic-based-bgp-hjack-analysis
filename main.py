@@ -37,8 +37,8 @@ stream.add_filter('collector','rrc11')
 
 # Time interval:
 #stream.add_interval_filter(1503631454, 1503631454)
-#stream.add_interval_filter(1503631454, 1503635054)
-stream.add_interval_filter(1503631454, 1506252254)
+stream.add_interval_filter(1503631454, 1503635054)
+#stream.add_interval_filter(1503631454, 1506252254)
 print("sampling interval: 1 hour")
 # Start the stream
 stream.start()
@@ -67,7 +67,9 @@ def build_tree():
 		while(elem):
 			# Interested only in announcements for the timebeing
 			if elem.type == 'A':
-				tree.unsanitizedInsert(elem)
+				prefixNode = tree.unsanitizedInsert(elem)
+                                if prefixNode:
+                                        detect_hijack(prefixNode, elem.time)
 			elif elem.type == 'W':
 				tree.withdraw(elem.peer_asn, elem.fields['prefix'])
 			# fields = elem.fields
