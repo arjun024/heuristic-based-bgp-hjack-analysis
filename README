@@ -1,4 +1,12 @@
-653 Computer Networks Project
-=============================
+Measuring the propagation of BGP Hijacks
+========================================
 
-Authors: Albert Williams, Arjun Sreedharan
+Albert Williams, Arjun Sreedharan.
+University of Massachusetts Amherst
+
+
+Abstract
+========
+
+The Internet at its top level is an interconnection of Autonomous Systems. These Autonomous Systems exchange routing information using a honor system based on the Border Gateway Protocol (BGP). Over the last few years, we have been extensively witnessing misuse of this protocol by hijackers who want to intercept traffic that are not meant for them. It is in this context that we aim to find a way to identify these hijacks, measure them and come up with ways to mitigate them. We designed a data structure to easily record and analyze BGP data and devised a scheme to distinguish hijacks from benign overlaps. After analyzing BGP data over a period of 30 days, we found that 0.48% of all AS announcements 10.07% of overlapping announcements were potential hijacks. We also formulated a reliability score to be assigned to each Autonomous System to identify its propensity to mitigate BGP hijacks.
+
