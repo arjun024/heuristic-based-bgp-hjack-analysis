@@ -8,7 +8,7 @@ class PrefixForest(object):
 		self.roots = []
 		self.size = 0
 
-	# wraps insert for inserting unsanitized BGPStream data
+	# wraps insert() for inserting unsanitized BGPStream data
 	def unsanitizedInsert(self, element):
 		try:
 			Prefix.parseStr(element.fields['prefix'])
@@ -129,6 +129,12 @@ class PrefixNode(object):
 			childStrs.append(str(child))
 		# return {str(self.root) : childStrs, 'announcement_root': str(self.root.announcements[0].AS)}
 		return {str(self.root) : childStrs}
+
+	def announcementTrees(self):
+		trees = self.root.announcements[:]
+		for child in self.children:
+			trees.extend(child.announcements[:])
+		return trees
 
 	def value(self):
 		return self.root.value()

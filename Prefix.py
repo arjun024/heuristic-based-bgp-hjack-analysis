@@ -131,9 +131,9 @@ class Prefix(object):
 class ASTreeNode(object):
 	def __init__(self, AS, time=-1):
 		self.AS = AS
-                # time is the time of the announcement, in seconds since epoch
-                # only used at the root: set to -1 for non-root nodes
-                self.time = time
+		# time is the time of the announcement, in seconds since epoch
+		# only used at the root: set to -1 for non-root nodes
+		self.time = time
 		self.children = []
 		# This field is manipulated by the analyzer if it believes this corresponds to a hijack
 		# Initially set to False
